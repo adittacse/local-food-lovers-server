@@ -98,6 +98,20 @@ async function run() {
         });
 
         // favorite related api's
+        app.get("/favorites", verifyFireBaseToken, async (req, res) => {
+            const email = req.query.reviewerEmail;
+            const query = {};
+            if (email) {
+                query.reviewerEmail = email;
+                if (email !== req.token_email) {
+                    return res.status(403).send({ message: "Forbidden Access" });
+                }
+            }
+            const cursor = favoritesCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+        });
+
         app.post("/favorites", async (req, res) => {
             const newFavorite = req.body;
             const result = await favoritesCollection.insertOne(newFavorite);
