@@ -1,14 +1,42 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const admin = require("firebase-admin");
 const dotenv = require("dotenv");
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+const serviceAccount = require("./local-food-lovers-client-firebase-admin-key.json");
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
+
 app.use(cors());
 app.use(express.json());
+
+const verifyFireBaseToken = async (req, res, next) => {
+    const authorization = req.headers.authorization;
+    if (!authorization) {
+        return res.status(401).send({ message: "Unauthorized Access" });
+    }
+
+    const token = authorization.split(" ")[1];
+    if (!token) {
+        return res.status(401).send({ message: "Unauthorized Access" });
+    }
+
+    try {
+        const userInfo = await admin.auth().verifyIdToken(token);
+        req.token_email = userInfo.email;
+        next();
+    } catch {
+        return res.status(401).send({ message: "Unauthorized Access" });
+    }
+}
 
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.gkaujxr.mongodb.net/?appName=Cluster0`;
 
@@ -26,19 +54,26 @@ async function run() {
         await client.connect();
         const db = client.db("localFoodLovers");
         const usersCollection = db.collection("users");
+        const reviewsCollection = db.collection("reviews");
 
         app.post("/users", async (req, res) => {
             const newUser = req.body;
             email = newUser.email;
             const query = { email: email };
             const existingUser = await usersCollection.findOne(query);
-            
+
             if (existingUser) {
                 res.send({ message: "User already exists." });
             } else {
                 const result = await usersCollection.insertOne(newUser);
                 res.send(result);
             }
+        });
+
+        app.post("/reviews", async (req, res) => {
+            const newReview = req.body;
+            const result = await reviewsCollection.insertOne(newReview);
+            res.send(result);
         });
 
         // Send a ping to confirm a successful connection
