@@ -56,6 +56,7 @@ async function run() {
         const usersCollection = db.collection("users");
         const reviewsCollection = db.collection("reviews");
 
+        // user related api's
         app.post("/users", async (req, res) => {
             const newUser = req.body;
             email = newUser.email;
@@ -68,6 +69,18 @@ async function run() {
                 const result = await usersCollection.insertOne(newUser);
                 res.send(result);
             }
+        });
+
+        // review related api's
+        app.get("/reviews", async (req, res) => {
+            const email = req.query.reviewerEmail;
+            const query = {};
+            if (email) {
+                query.reviewerEmail = email;
+            }
+            const cursor = reviewsCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
         });
 
         app.post("/reviews", async (req, res) => {
