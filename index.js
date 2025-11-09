@@ -55,6 +55,7 @@ async function run() {
         const db = client.db("localFoodLovers");
         const usersCollection = db.collection("users");
         const reviewsCollection = db.collection("reviews");
+        const favoritesCollection = db.collection("favorites");
 
         // user related api's
         app.post("/users", async (req, res) => {
@@ -93,6 +94,13 @@ async function run() {
         app.post("/reviews", async (req, res) => {
             const newReview = req.body;
             const result = await reviewsCollection.insertOne(newReview);
+            res.send(result);
+        });
+
+        // favorite related api's
+        app.post("/favorites", async (req, res) => {
+            const newFavorite = req.body;
+            const result = await favoritesCollection.insertOne(newFavorite);
             res.send(result);
         });
 
