@@ -141,10 +141,9 @@ async function run() {
 
         app.delete("/favorites/:id", async (req, res) => {
             const id = req.params.id;
-            // const query = { _id: new ObjectId(id) };
-            console.log(id);
-            // const result = await favoritesCollection.deleteOne(query);
-            // res.send(result);
+            const query = { reviewId: id };
+            const result = await favoritesCollection.deleteOne(query);
+            res.send(result);
         });
 
         // Send a ping to confirm a successful connection
