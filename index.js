@@ -117,6 +117,16 @@ async function run() {
             res.send(result);
         });
 
+        app.get("/favorites/exists", verifyFireBaseToken, async (req, res) => {
+            const { reviewId } = req.query;
+            if (!reviewId) return res.status(400).json({ ok: false });
+            const exists = await favoritesCollection.findOne({
+                reviewId,
+                favoriteUserEmail: req.token_email
+            });
+            res.send(exists);
+        });
+
         app.post("/favorites", async (req, res) => {
             const id = req.body.reviewId;
             const newFavorite = req.body;
