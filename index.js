@@ -135,8 +135,12 @@ async function run() {
                     return res.status(403).send({ message: "Forbidden Access" });
                 }
             }
-            const cursor = favoritesCollection.find(query);
-            const result = await cursor.toArray();
+            
+            const favoritesResult = await favoritesCollection.find(query).toArray();
+            const ids = favoritesResult.map(f => f.reviewId).map(id => new ObjectId(id));
+
+            const reviewsResult = reviewsCollection.find({ _id: { $in: ids} })
+            const result = await reviewsResult.toArray();
             res.send(result);
         });
 
