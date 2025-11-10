@@ -74,12 +74,17 @@ async function run() {
 
         // review related api's
         app.get("/reviews", async (req, res) => {
-            const email = req.query.reviewerEmail;
+            const { reviewerEmail, foodName } = req.query;
             const query = {};
-            if (email) {
-                query.reviewerEmail = email;
+            if (reviewerEmail) {
+                query.reviewerEmail = reviewerEmail;
             }
-            const cursor = reviewsCollection.find(query);
+
+            if (foodName) {
+                const esc = foodName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                query.foodName = { $regex: esc, $options: "i" };
+            }
+            const cursor = reviewsCollection.find(query).sort({ date: -1 });
             const result = await cursor.toArray();
             res.send(result);
         });
