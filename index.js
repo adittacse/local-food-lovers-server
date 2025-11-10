@@ -104,10 +104,10 @@ async function run() {
 
         // favorite related api's
         app.get("/favorites", verifyFireBaseToken, async (req, res) => {
-            const email = req.query.reviewerEmail;
+            const email = req.query.favoriteUserEmail;
             const query = {};
             if (email) {
-                query.reviewerEmail = email;
+                query.favoriteUserEmail = email;
                 if (email !== req.token_email) {
                     return res.status(403).send({ message: "Forbidden Access" });
                 }
@@ -118,9 +118,23 @@ async function run() {
         });
 
         app.post("/favorites", async (req, res) => {
+            const id = req.body.reviewId;
             const newFavorite = req.body;
+            const query = { reviewId: id };
+            const exists = await favoritesCollection.findOne(query);
+            if (exists) {
+                return res.json({ duplicated: true, message: "Already in favorite" });
+            }
             const result = await favoritesCollection.insertOne(newFavorite);
             res.send(result);
+        });
+
+        app.delete("/favorites/:id", async (req, res) => {
+            const id = req.params.id;
+            // const query = { _id: new ObjectId(id) };
+            console.log(id);
+            // const result = await favoritesCollection.deleteOne(query);
+            // res.send(result);
         });
 
         // Send a ping to confirm a successful connection
