@@ -102,6 +102,22 @@ async function run() {
             res.send(result);
         });
 
+        app.patch("/reviews/:id", verifyFireBaseToken, async (req, res) => {
+            const id = req.params.id;
+            const updatedReview = req.body;
+            const email = req.body.reviewerEmail;
+            if (email !== req.token_email) {
+                return res.status(403).send({ message: "Forbidden Access" });
+            }
+            const query = { _id: new ObjectId(id) };
+            const update = {
+                $set: updatedReview
+            };
+            const options = {};
+            const result = await reviewsCollection.updateOne(query, update, options);
+            res.send(result);
+        });
+
         // favorite related api's
         app.get("/favorites", verifyFireBaseToken, async (req, res) => {
             const email = req.query.favoriteUserEmail;
