@@ -1,3 +1,4 @@
 node_modules
 .env
 local-food-lovers-client-firebase-admin-key.json
+.vercel
