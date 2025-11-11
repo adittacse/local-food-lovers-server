@@ -126,8 +126,15 @@ async function run() {
 
         app.delete("/reviews/:id", async (req, res) => {
             const id = req.params.id;
-            const query = { _id: new ObjectId(id) };
-            const result = await reviewsCollection.deleteOne(query);
+            const query1 = { reviewId: id };
+            const cursor = favoritesCollection.find(query1);
+            const existsInFavorite = await cursor.toArray();
+            if (existsInFavorite.length > 0) {
+                await favoritesCollection.deleteMany(query1);
+            }
+
+            const query2 = { _id: new ObjectId(id) };
+            const result = await reviewsCollection.deleteOne(query2);
             res.send(result);
         });
 
@@ -162,10 +169,13 @@ async function run() {
             res.send(exists);
         });
 
-        app.post("/favorites", async (req, res) => {
+        app.post("/favorites", verifyFireBaseToken, async (req, res) => {
             const id = req.body.reviewId;
             const newFavorite = req.body;
-            const query = { reviewId: id };
+            const query = {
+                reviewId: id,
+                favoriteUserEmail: req.token_email
+            };
             const exists = await favoritesCollection.findOne(query);
             if (exists) {
                 return res.json({ duplicated: true, message: "Already in favorite" });
