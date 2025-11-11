@@ -152,7 +152,9 @@ async function run() {
 
         app.get("/favorites/exists", verifyFireBaseToken, async (req, res) => {
             const { reviewId } = req.query;
-            if (!reviewId) return res.status(400).json({ ok: false });
+            if (!reviewId) {
+                return res.status(400).json({ ok: false });
+            }
             const exists = await favoritesCollection.findOne({
                 reviewId,
                 favoriteUserEmail: req.token_email
@@ -180,8 +182,8 @@ async function run() {
         });
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
