@@ -3,5 +3,5 @@
     "functions": {
         "api/index.js": { "runtime": "nodejs22.x" }
     },
-    "routes": [{ "src": "/(.*)", "dest": "/api/index.js" }]
+    "routes": [{ "src": "/(.*)", "dest": "index.js" }]
 }
