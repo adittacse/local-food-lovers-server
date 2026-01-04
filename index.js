@@ -109,6 +109,20 @@ async function run() {
             const result = await usersCollection.insertOne(newUser);
             return res.send(result);
         });
+
+        app.patch("/users/:id/role", verifyFireBaseToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const roleInfo = req.body;
+            const query = { _id: new ObjectId(id) };
+            const update = {
+                $set: {
+                    role: roleInfo.role
+                },
+            };
+
+            const result = await usersCollection.updateOne(query, update);
+            res.send(result);
+        });
         
         app.put("/users/:email", async (req, res) => {
             const email = req.params.email;
