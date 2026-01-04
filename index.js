@@ -76,7 +76,7 @@ async function run() {
 
         // review related api's
         app.get("/reviews", async (req, res) => {
-            const { reviewerEmail, foodName } = req.query;
+            const { reviewerEmail, foodName, search, location, minRating, sort="newest" } = req.query;
             const query = {};
             if (reviewerEmail) {
                 query.reviewerEmail = reviewerEmail;
@@ -86,7 +86,40 @@ async function run() {
                 const esc = foodName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
                 query.foodName = { $regex: esc, $options: "i" };
             }
-            const cursor = reviewsCollection.find(query).sort({ date: -1 });
+            
+            if (search) {
+                query.$or = [
+                    { foodName: { $regex: search, $options: "i" } },
+                    { restaurantName: { $regex: search, $options: "i" } }
+                ];
+            }
+
+            if (location) {
+                query.location = location;
+            }
+
+            if (minRating) {
+                query.rating = {
+                    $gte: parseFloat(minRating)
+                };
+            }
+
+            let sortQuery = {};
+            switch (sort) {
+                case "rating_high":
+                    sortQuery = { rating: -1 };
+                    break;
+                case "rating_low":
+                    sortQuery = { rating: 1 };
+                    break;
+                case "oldest":
+                    sortQuery = { date: 1 };
+                    break;
+                default:
+                    sortQuery = { date: -1 }; // newest
+            }
+
+            const cursor = reviewsCollection.find(query).sort(sortQuery);
             const result = await cursor.toArray();
             res.send(result);
         });
@@ -194,8 +227,8 @@ async function run() {
         });
 
         // Send a ping to confirm a successful connection
-        // await client.db("admin").command({ ping: 1 });
-        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        await client.db("admin").command({ ping: 1 });
+        console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
