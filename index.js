@@ -59,7 +59,41 @@ async function run() {
         const reviewsCollection = db.collection("reviews");
         const favoritesCollection = db.collection("favorites");
 
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.token_email;
+            const user = await usersCollection.findOne({ email });
+            if (!user || user.role !== "admin") {
+                return res.status(403).send({ message: "Forbidden: Admin only" });
+            }
+
+            next();
+        };
+
         // user related api's
+        app.get("/users", verifyFireBaseToken, verifyAdmin, async (req, res) => {
+            const cursor = usersCollection.find();
+            const users = await cursor.toArray();
+            res.send(users);
+        });
+
+        app.get("/users/admin/:email", verifyFireBaseToken, async (req, res) => {
+            const email = req.params.email;
+
+            if (email !== req.token_email) {
+                return res.status(403).send({ admin: false });
+            }
+
+            const user = await usersCollection.findOne({ email });
+            res.send({ admin: user?.role === "admin" });
+        });
+
+        app.get("/users/:email/role", verifyFireBaseToken, async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            res.send({ role: user?.role || "user" });
+        });
+
         app.post("/users", async (req, res) => {
             const newUser = req.body;
             email = newUser.email;
@@ -67,11 +101,69 @@ async function run() {
             const existingUser = await usersCollection.findOne(query);
 
             if (existingUser) {
-                res.send({ message: "User already exists." });
-            } else {
-                const result = await usersCollection.insertOne(newUser);
-                res.send(result);
+                return res.send({ message: "User already exists." });
             }
+
+            newUser.role = "user"
+
+            const result = await usersCollection.insertOne(newUser);
+            return res.send(result);
+        });
+        
+        app.put("/users/:email", async (req, res) => {
+            const email = req.params.email;
+            const updatedData = req.body;
+            const query = { email };
+
+            const existingUser = await usersCollection.findOne(query);
+
+            if (!existingUser) {
+                return res.status(404).send({ message: "User not found" });
+            }
+
+            const updateDoc = { $set: {} };
+
+            /**
+             * rules
+             * - manual user → name & photo update allowed
+             * - google firebase user → name & photo NOT allowed
+             * - common fields → always allowed
+             */
+
+            // manual user only fields
+            if (existingUser.provider === "manual") {
+                if (updatedData.displayName) {
+                    updateDoc.$set.displayName = updatedData.displayName;
+                }
+                if (updatedData.photoURL) {
+                    updateDoc.$set.photoURL = updatedData.photoURL;
+                }
+            }
+
+            // common editable fields (both users)
+            // if (updatedData.bio !== undefined) {
+            //     updateDoc.$set.bio = updatedData.bio;
+            // }
+
+            // if (updatedData.phone !== undefined) {
+            //     updateDoc.$set.phone = updatedData.phone;
+            // }
+
+            // if (updatedData.address !== undefined) {
+            //     updateDoc.$set.address = updatedData.address;
+            // }
+
+            // nothing to update
+            if (Object.keys(updateDoc.$set).length === 0) {
+                return res.send({ message: "Nothing to update" });
+            }
+
+            const result = await usersCollection.updateOne(query, updateDoc);
+
+            res.send({
+                message: "Profile updated successfully",
+                modifiedCount: result.modifiedCount
+            });
         });
 
         // review related api's
